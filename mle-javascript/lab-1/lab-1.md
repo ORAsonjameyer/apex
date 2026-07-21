@@ -26,7 +26,7 @@ In this lab, you will:
 
 ### Prerequisites
 
-This lab assumes that you created an APEX workspace and downloaded the [application scaffold](../solution/solution.sql) file to a temporary location on your laptop.
+This lab assumes that you created an APEX workspace and downloaded the [application scaffold](../solution/scaffold.sql) file to a temporary location on your laptop.
 
 ## Task 1: Log into your APEX workspace
 
@@ -36,7 +36,7 @@ In a browser supported by APEX, open the URL for your APEX workspace. You must p
 - Your username
 - Your password
 
-Note that the free APEX workspace service on oracleapex.com has been used to create the screenshots for this livelab.
+Note that an Always-Free Autonomous AI Database service has been used to create the screenshots for this livelab. The developer experience is identical across platforms though, it does not matter where you created your workspace as long as you have one for APEX 26.1.
 
 ![Log into your APEX workspace](./images/apex-sign-in-to-workspace.png)
 
@@ -71,4 +71,4 @@ After the import completes, the application appears in App Builder and is ready 
 
 - **Author** - Martin Bach, Senior Principal Product Manager
 - **Contributors** - Sonja Meyer, Consulting Member of Technical Staff
-- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, June 2026
+- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, July 2026

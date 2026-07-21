@@ -47,7 +47,7 @@ Feel free to compare your solution with the one created for this lab (see Downlo
 
 Two downloads are provided:
 
-1. [Click here](../solution/solution.sql) to download the application scaffold.
+1. [Click here](../solution/scaffold.sql) to download the application scaffold.
 1. [Click here](../solution/solution.sql) to download the completed application.
 
 The scaffold is intended as your starting point. Use this in the subsequent labs to build the finished app.
