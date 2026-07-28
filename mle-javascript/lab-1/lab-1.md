@@ -44,7 +44,7 @@ You are now ready to import your application.
 
 ## Task 2: Import the application scaffold
 
-After signing in, open App Builder, then click _Import_ to begin the process of importing the application scaffold.
+After signing in, open App Builderon the top, then click _Import_ to begin the process of importing the application scaffold.
 
 ![Import the application scaffold](./images/apex-import-application.png)
 
@@ -52,7 +52,7 @@ Drag and drop the application scaffold into the file upload box, or click inside
 
 ![Import the application scaffold](./images/apex-prepare-app-import.png)
 
-A short confirmation dialog is displayed next. Leave all the defaults, and click _Next_. APEX imports the application and displays the next step. The application includes supporting objects that are installed during the import process. Click on _Install Supporting Objects_ to initiate the execution of the build script.
+A short confirmation dialog is displayed next. You can leave all the defaults, and click _Next_. APEX imports the application and displays the next step. The application includes supporting objects (1 Table, 1 Index and 1 Trigger) that are installed during the import process. Click on _Install Supporting Objects_ to initiate the execution of the build script.
 
 ![Confirm the installation of supporting objects](./images/apex-install-supporting-objects.png)
 
