@@ -18,13 +18,14 @@ In this lab, you will:
 
 - Create an OCI Generative AI service in APEX (or your alternative)
 - Configure the service for the Google Gemini model
+- Add a JSON column to the application's main table, `MLE_DATA`
 - Create a local JSON Source for the EXIF metadata
 
 ### Prerequisites
 
 This lab assumes that you completed [Lab 1](../lab-1/lab-1.md) and imported the application scaffold, including its supporting objects.
 
-You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export. If you prefer not to use an OCI GenAI service you are free to configure your own, this lab shows you how to configure OpenAI GPT-4o as an alternative. The advantage of the model being its low cost; GPT-4o may even be free of charge for you. 
+You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export. If you prefer not to use an OCI GenAI service you are free to configure your own, this lab shows you how to configure OpenAI GPT-4o as an alternative. The advantage of the model being its low cost; GPT-4o may even be free of charge for you.
 
 Regardless which route you decide to take, make sure you understand the potential cost implications of using the AI model of choice.
 
@@ -76,7 +77,27 @@ Regardless which route you decide to take, make sure you understand the potentia
 
 The AI service is now available to the application through APEX AI Services. The remainder of this Livelab assumes the use of Gemini. If you chose a different model, you need to adapt the later labs to your AI Service.
 
-## Task 2: Create the JSON Source
+## Task 2: Add a JSON column to MLE_DATA
+
+The EXIF information this app will extract from a photo is provided in JSON format. The best way to persist the meta information along with the photo is to store it in a JSON column. `MLE_DATA` currently doesn't feature a JSON column, let's add it in the next step.
+
+1. Open **SQL Workshop** and select **SQL Commands**.
+1. Run the following statement:
+
+   ```sql
+   <copy>
+   alter table
+      mle_data
+   add
+      exif_data json;
+   </copy>
+   ```
+
+   ![Entering SQL commands in APEX](./images/sql-commands.png)
+
+The DDL statement adds the `EXIF_DATA` JSON column without deleting or changing any existing image records. The JSON data type allows each image record to store a flexible set of metadata attributes, such as camera model, exposure settings, and GPS coordinates, without adding a separate relational column for every possible EXIF field. Confirm that the statement completes successfully before continuing.
+
+## Task 3: Create the JSON Source
 
 In this task, you will connect an APEX JSON Source to the `EXIF_DATA` column in `SM_POSTS`. The source does not parse the image itself. Instead, it tells APEX where the JSON metadata is stored and which column should be used when APEX components need to read that metadata.
 
