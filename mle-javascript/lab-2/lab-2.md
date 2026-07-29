@@ -2,9 +2,11 @@
 
 ## Introduction
 
-In this lab, you will configure the AI service used by the application and create a JSON Source for the EXIF metadata stored in the database. EXIF (Exchangeable Image File Format) metadata is information embedded in an image file, such as the camera model, date, lens, exposure settings, and GPS coordinates. This information provides useful context when reviewing an image.
+In this lab, you will configure an **AI service** used by the application, and create a **JSON Source** for the EXIF metadata stored in the database. EXIF (Exchangeable Image File Format) metadata is information embedded in an image file, such as the camera model, date, lens, exposure settings, and GPS coordinates. This information provides useful context when reviewing an image.
 
-The application uses the configured AI service through its Static ID, `google-gemini`. Later labs call this service from JavaScript running in the database. The JSON Source exposes the metadata stored in the `EXIF_DATA` JSON column of the `SM_POSTS` table so it can be used by APEX components. It gives APEX a structured view of the JSON document and its attributes, making the metadata easier to use in reports and other components.
+The application uses an AI service through its Static ID, `google-gemini`. You can of course define your own AI service if you prefer, just make sure it "understands" photos and assign it's own static ID and use it throughout the entire lab. Later modules call this service from JavaScript running in the database.
+
+The JSON Source exposes the metadata stored in the `EXIF_DATA` JSON column of the `SM_POSTS` table so it can be used by APEX components. It gives APEX a structured view of the JSON document and its attributes, making the metadata easier to use in reports and other components.
 
 This lab requires Oracle AI Database 26ai and Oracle APEX 26.1.
 
@@ -14,7 +16,7 @@ Estimated time to complete: 10 minutes
 
 In this lab, you will:
 
-- Create an OCI Generative AI service in APEX
+- Create an OCI Generative AI service in APEX (or your alternative)
 - Configure the service for the Google Gemini model
 - Create a local JSON Source for the EXIF metadata
 
@@ -22,31 +24,57 @@ In this lab, you will:
 
 This lab assumes that you completed [Lab 1](../lab-1/lab-1.md) and imported the application scaffold, including its supporting objects.
 
-You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export.
+You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export. If you prefer not to use an OCI GenAI service you are free to configure your own, this lab shows you how to configure OpenAI GPT-4o as an alternative. The advantage of the model being its low cost; GPT-4o may even be free of charge for you. 
 
-## Task 1: Create the Generative AI service
+Regardless which route you decide to take, make sure you understand the potential cost implications of using the AI model of choice.
 
-1. Open **App Builder**.
-2. From the App Builder home page, open **Workspace Utilities**.
-3. Select **Generative AI**.
-4. Click **Create** and select **OCI Generative AI Service**.
+## Task 1: Create the APEX AI service
 
-Configure the service as follows. These values tell APEX which OCI service, model, and compartment to use.
+1. Open **App Builder**_** by clicking on the stylized APEX icon underneath the Oracle logo in the top-left corner
+1. From the App Builder home page, open **Workspace Utilities**.
 
-- **Name**: `google gemini` (use this exact name). 
-- **Compartment ID**: The OCID of the compartment that contains the Generative AI resources. A compartment is the OCI container in which the service is authorized to access the model.
-- **Region**: Select the OCI region by clicking on the name below the textbox where the service is available, for example `Germany Central (Frankfurt)`. When you select the region, APEX fills in the corresponding **Base URL**.
-- **Model ID**: `google.gemini-2.5-flash`. This identifies the Gemini model that will process the image.
-- - **Static ID**: `google-gemini` will be automatically filled.  The Static ID is different from the display name: it is the stable, code-friendly identifier used by the application and by the MLE module. It must remain exactly `google-gemini`.
+![Selecting Workspace Utilities in App Builder](./images/workspace-utilities.png)
 
-Under **Credentials**, select an existing OCI credential configured for your workspace, or create one if your environment does not provide it. APEX uses this credential to authenticate the request without exposing secret values to the application. If you need to create the OCI API key, open the OCI Console, open your user profile, select **User Settings**, and open **API Keys**. Click **Add API Key**, download the private key, and record the user OCID, tenancy OCID, fingerprint, and private key; these values are used to create the APEX Web Credential.
+1. Select **Generative AI**.
 
-In APEX, create the Web Credential from **Workspace Utilities** > **Web Credentials**, then select it in the Generative AI service configuration. Keep the private key in the credential store and never publish it.
+   You now have a choice to create either an OCI GenAI service as detailed in the next section, or GPT-4o as an example of a potentially free model as explained in step 5.
 
-Click **Test Connection** to verify the configuration, then click **Create** or **Apply Changes**.
+1. Create an OCI GenAI Service
 
-The Generative AI service is now available to the application through APEX AI Services.
+   Click **Create**_** to begin the definition of the AI Service.
 
+   Configure the service as follows, values you see on the screen but not in the following steps are left at their defaults. These values tell APEX which OCI service, model, and compartment to use.
+
+   - **AI Provider**: OCI Generative AI Service
+   - **Name**: `google gemini` (use this exact name, including the white space).
+   - **Compartment ID**: The OCID of the compartment that contains the Generative AI resources. A compartment is the OCI container in which the service is authorized to access the model.
+   - **Region**: Select the OCI region by clicking on the name _below the textbox_ where the service is available, for example `Germany Central (Frankfurt)`. This click will populate the corresponding **Base URL**, like `eu-frankfurt-1`.
+   - **Model ID**: `google.gemini-2.5-flash`. This identifies the Gemini model that will process the image.
+
+   In the **Credentials** section, select an existing OCI credential configured for your workspace, or create one if your environment does not provide it. APEX uses this credential to authenticate the request without exposing secret values to the application. If you need to create the OCI API key, open the OCI Console, open your user profile in the top right corner, select **User Settings**, and open the **Tokens and Keys** tab. Click **Add API Key**, download the private key, and record the user OCID, tenancy OCID, fingerprint, and private key; these values are used to create the APEX Web Credential.
+
+   If these are your first Web Credentials, populate the values in the form. If not, create the Web Credential from **Workspace Utilities** > **Web Credentials**, then select it in the Generative AI service configuration. Keep the private key in the credential store and never publish it.
+
+   - **Static ID**: `google-gemini` will be automatically filled.  The Static ID is different from the display name: it is the stable, code-friendly identifier used by the application and by the MLE module. It must remain exactly as set, `google-gemini`.
+
+   ![Definition of the Google Gemini AI Service](./images/ai-service.png)
+
+   Click **Test Connection** to verify the configuration, then click **Create** or **Apply Changes**. See [below](#troubleshooting) for troubleshooting steps should you encounter errors.
+
+1. Create an OpenAI ChatGPT-4o Service
+
+   The process is nearly identical to the one above. Click **Create** to begin the definition of the AI Service.
+
+   Configure the service as follows, values you see on the screen but not in the following steps are left at their defaults.
+
+   - **AI Provider**: OpenAI
+   - **Name**: whichever name you prefer
+   - **API Key**: your OpenAI API key
+   - **AI Model**: `gpt-4o`
+
+   You can use the **Test Connection** button to ensure your configuration works.
+
+The AI service is now available to the application through APEX AI Services. The remainder of this Livelab assumes the use of Gemini. If you chose a different model, you need to adapt the later labs to your AI Service.
 
 ## Task 2: Create the JSON Source
 
@@ -58,6 +86,8 @@ In this task, you will connect an APEX JSON Source to the `EXIF_DATA` column in 
 
 2. Open **Shared Components**.
 3. Under **Data Sources**, select **JSON Sources**.
+
+   ![JSON Sources in shared components](./images/JSON-source.png)
 
    The JSON Sources page lists the JSON sources already defined for this application. In the current scaffold, no source is defined yet, so the page displays an empty list.
 
@@ -78,7 +108,7 @@ When these values are entered, click **Next**.
 On the **JSON Columns** screen, APEX lists the columns from `SM_POSTS` that can contain JSON documents. APEX needs this information to identify the metadata document and inspect its attributes. The first field is required. If **JSON Column 1** is left at **- Select -** and you click **Next**, APEX displays the error **JSON Column 1 must have some value**.
 
 - For **JSON Column 1**, select `EXIF_DATA`. This column is populated later by the MLE JavaScript module after it extracts the EXIF metadata from the uploaded image.
-- Leave **JSON Schema for Column 1** and **JSON Column 2** wirth default. The application uses only one JSON column.
+- Leave **JSON Schema for Column 1** and **JSON Column 2** with their respective default. The application uses only one JSON column.
 
 Click **Next** to continue.
 
@@ -102,6 +132,29 @@ Confirm that the following objects are available:
 
 You are now ready to continue with [Lab 3: Import third-party JavaScript modules into the database](../lab-3/lab-3.md).
 
+## Troubleshooting
+
+Based on your configuration you may have to enable outbound network traffic. Autonomous AI Database shouldn't require this step, others such as self-hosted instances do. Should you get errors similar in wording to "request denied due to Network ACL", this snippet should solve problem. It must be executed by an administrator.
+
+```sql
+<copy>
+begin
+    dbms_network_acl_admin.append_host_ace(
+        host => '*.oci.oraclecloud.com',
+        ace  =>  xs$ace_type(
+            privilege_list => xs$name_list('http'),
+            principal_name => 'APEX_260100',
+            principal_type => xs_acl.ptype_db
+        )
+    );
+    commit;
+end;
+/
+</copy>
+```
+
+Refer to the [APEX documentation for more details](https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/enabling-network-services.html).
+
 ## Learn More
 
 - [APEX App Builder User's Guide: Generative AI](https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/using-generative-ai.html)
@@ -110,6 +163,6 @@ You are now ready to continue with [Lab 3: Import third-party JavaScript modules
 
 ## Acknowledgements
 
-- **Author** - Martin Bach, Senior Principal Product Manager
-- **Contributors** - Sonja Meyer, Consulting Member of Technical Staff
+- **Author** - Sonja Meyer, Consulting Member of Technical Staff
+- **Contributors** - Martin Bach, Senior Principal Product Manager
 - **Last Updated By/Date** - Sonja Meyer, Consulting Member of Technical Staff, July 2026
