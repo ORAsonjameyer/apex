@@ -2,12 +2,12 @@
 
 ## Introduction
 
-In this lab, you will import JavaScript modules into Oracle AI Database 26ai and make them available through an MLE environment. Multilingual Engine (MLE) allows JavaScript to run close to the data inside the database. The modules can query database tables, process files, and call database functionality while the application uses familiar JavaScript imports.
+In this lab, you will import JavaScript modules into Oracle AI Database 26ai and make them available through an MLE environment. Multilingual Engine (MLE) allows JavaScript to run close to the data inside the database. The modules can query database tables, process files, and call database functionality while the application uses familiar JavaScript imports. You can think of JavaScript modules as PL/SQL packages, dedicated namespaces for grouping related functionality together. Just as with PL/SQL, JavaScript can have public and private variables, functions, etc. in a module.
 
 You will create three modules for the image analysis application:
 
 - `MLE_EXIFR_MODULE` loads the third-party `exifr` library. It extracts EXIF metadata from an uploaded image.
-- `MLE_GEMINI_AI_VERIFY_MODULE` reads an image from `SM_POSTS` and calls the configured APEX AI service.
+- `MLE_GEMINI_AI_VERIFY_MODULE` reads an image from `MLE_DATA` and calls the configured APEX AI service.
 - `MLE_REALNESS_SCORE_MODULE` converts the structured AI response into text for the APEX user interface.
 
 The modules are kept separate so that each one has a clear responsibility. The MLE environment then gives them the import names that the APEX application uses.
@@ -29,48 +29,54 @@ In this lab, you will:
 
 This lab assumes that you completed [Lab 2](../lab-2/lab-2.md) and created the `google gemini` Generative AI service and the `EXIF_SOURCE` JSON Source.
 
-## Task 1: Allow location access
+## Task 1: Allow Location Access
 
-The application includes a map that can use the browser's location service. When the browser displays a message such as **Allow localhost:7005 to access your location?**, click **Allow**. You can select **Remember this decision** if you want the browser to remember the permission.
+The application includes a map that can use the browser's location service. When the browser displays a message such as **Allow <your host>:7005 to access your location?**, click **Allow**. You can select **Remember this decision** if you want the browser to remember the permission.
 
 This permission belongs to the browser and is separate from the MLE environment. It allows the map to use the current location; it does not grant the application access to your OCI credentials or database account. If you select **Block** by mistake, open the browser's site permissions for the APEX URL and enable **Location** before continuing.
 
 ## Task 2: Open the MLE module area
 
-1. Open **Object Browser**.
-2. In the object tree, expand **MLE Modules - JavaScript**.
-3. Use the **Create** or **+** action to create a JavaScript MLE module.
+MLE modules are database objects. They are not APEX page components, so create them in the database schema that owns `MLE_DATA` and the MLE environment. In the workshop environment, this is the schema you selected or created when you provisioned the workspace. Use **Object Browser** to create database objects in APEX.
 
-MLE modules are database objects. They are not APEX page components, so create them in the database schema that owns `SM_POSTS` and the MLE environment. In the workshop environment, this is the `ORACLE` schema.
+![APEX Object Browser](./images/object-browser.png)
 
 ## Task 3: Create the EXIF module
+
+1. Open **Object Browser**.
+1. In the tree structure on the left-hand side, right-click on **MLE Modules - JavaScript**
+1. Select **Create MLE Module - JavaScript** from the context menu
 
 Create a JavaScript module with the following values:
 
 - **Module Name**: `MLE_EXIFR_MODULE`
-- **Language**: JavaScript
+- **Version**: 7.1.3
+- **Source Type**: URL
+- **URL**: `https://cdn.jsdelivr.net/npm/exifr@7.1.3/+esm`
 
-Paste the bundled `exifr` module source provided with this lab into the code editor. The bundled file is the browser-independent ESM build of `exifr` (for example, `exifr@7.1.3/dist/full.esm.mjs`). It is imported under the name `exifr-module` in the MLE environment.
+Create the JavaScript module in the database by clicking on **Create MLE Module**.
 
-The module is responsible for reading metadata from the image BLOB. It does not call Gemini and does not calculate a score. Keeping this work in a separate module makes the EXIF extraction reusable and easier to understand.
+![Create the EXIFR module](./images/create-mle-module-from-url.png)
 
-Click **Save and Compile**. Continue only after the module compiles successfully.
+The EXIFR module is responsible for reading metadata from the image BLOB you upload via the APEX application. It does not call Gemini and does not calculate a score. Keeping this work in a separate module makes the EXIF extraction reusable and easier to understand. EXIFR is a third-party dependency in a production-like format typical for JavaScript.
 
 ## Task 4: Create the Gemini verification module
 
 Create a second JavaScript module:
 
 - **Module Name**: `MLE_GEMINI_AI_VERIFY_MODULE`
-- **Language**: JavaScript
+- **Version**: 1.0
+- **Source Type**: Source Code
 
-Paste the following source into the code editor and click **Save and Compile**:
+Paste the following source into the code editor and click **Create MLE Module**:
 
 ```javascript
+<copy>
 export function analyzePhotoWithGemini(id) {
     if (!id) throw new Error("Please provide an image record ID.");
 
     const photo = session.execute(
-        `select 1 from sm_posts where id = :id and file_blob is not null`,
+        `select 1 from MLE_DATA where id = :id and file_blob is not null`,
         { id }
     );
 
@@ -96,7 +102,7 @@ export function analyzePhotoWithGemini(id) {
                 select file_blob, nvl(file_mime, 'image/jpeg'),
                        nvl(file_name, 'photo.jpg')
                   into l_blob, l_mime, l_name
-                  from sm_posts
+                  from MLE_DATA
                  where id = :id;
 
                 l_attachments.extend;
@@ -134,22 +140,25 @@ export function analyzePhotoWithGemini(id) {
         });
     }
 }
+</copy>
 ```
 
-This module first checks whether the requested `SM_POSTS` record contains an image. It then uses `session.execute` to load the BLOB and calls `APEX_AI.GENERATE` with the native APEX attachment type. JavaScript controls the overall flow, while PL/SQL is used only inside the module where APEX AI requires native database types.
+This module first checks whether the requested `MLE_DATA` record contains an image. It then uses `session.execute` to load the BLOB representing the image and calls `APEX_AI.GENERATE` with the native APEX attachment type. JavaScript controls the overall flow, while PL/SQL is used only inside the module where APEX AI requires native database types. MLE/JavaScript understands PL/SQL Records and Collections, alternatively this embedded PL/SQL block could have been written entirely in JavaScript. For the sake of this Livelab though the PL/SQL approach was chosen to demonstrate how easy it is to create interoperability between SQL, PL/SQL and JavaScript.
 
-The module calls the service using the Static ID `google-gemini`. This is why the service created in Lab 2 must use the exact Static ID. The module returns structured JSON containing a status, classification, confidence, and reason so the APEX page can handle successful and failed AI calls consistently.
+The module calls the AI service you created in lab 2 using the Static ID `google-gemini`. This is why the service created in Lab 2 must use the exact Static ID; update the static ID if you created your own AI service that deviates from the lab. Note how the module returns structured JSON containing a status, classification, confidence, and reason so the APEX page can handle successful and failed AI calls consistently.
 
 ## Task 5: Create the realness score module
 
 Create a third JavaScript module:
 
 - **Module Name**: `MLE_REALNESS_SCORE_MODULE`
-- **Language**: JavaScript
+- **Version**: 1.0
+- **Source Type**: Source Code
 
-Paste the following source into the code editor and click **Save and Compile**:
+Paste the following source into the code editor and click **Create MLE Module**:
 
 ```javascript
+<copy>
 export function getAssessmentReason(json) {
     return parse(json).reason || json || "";
 }
@@ -193,46 +202,54 @@ function parse(json) {
 function clamp(value) {
     return Math.min(Math.max(value, 0), 100);
 }
+</copy>
 ```
 
 This module contains only presentation helpers. It parses the JSON returned by the Gemini module, extracts the short reason shown in the application, and formats the score. It does not call an AI service and does not access the image table. Keeping this logic separate prevents the APEX page from having to calculate scores itself.
 
+![Editing MLE modules in APEX Object Browser](./images/edit-mle-module-code.png)
+
 ## Task 6: Create the MLE environment
 
-1. In **Object Browser**, expand **MLE Environments**.
-2. Click **Create** or **+**.
-3. Enter `MLE_EXIF_ENV` as the environment name.
-4. Save the environment and open its **Imports** tab.
-5. Click **Add Import** for each of the three modules.
+Later in this lab you will make references to the three MLE modules you just created in Page Designer. In order to do so, you need to import the module by an import name of your choice. For Oracle AI Database to map the import name to a schema object, MLE environments are used.
+
+1. In **Object Browser**, right-click **MLE Environments**.
+1. Click **Create MLE Environment** in the context menu.
+1. Enter `MLE_EXIF_ENV` as the environment name.
+1. Click **Create MLE Environment** to create it.
+1. Click on the environment's name to open the imports tab. You may have to expand the _MLE Environments_ node in the tree view.
+1. Click **Add Import** for each of the three modules.
+
+![Adding imports to an MLE environment](./images/add-import-to-mle-env.png)
 
 An MLE environment maps the module names used by JavaScript `import` statements to database MLE modules. The import name is therefore part of the application contract and must be entered exactly as shown below:
 
 | Module Owner | Module Name | Import Name |
 | --- | --- | --- |
-| `ORACLE` | `MLE_EXIFR_MODULE` | `exifr-module` |
-| `ORACLE` | `MLE_GEMINI_AI_VERIFY_MODULE` | `gemini-ai-verify-module` |
-| `ORACLE` | `MLE_REALNESS_SCORE_MODULE` | `realness-score-module` |
+| Your workspace's parsing schema | `MLE_EXIFR_MODULE` | `exifr-module` |
+| Your workspace's parsing schema | `MLE_GEMINI_AI_VERIFY_MODULE` | `gemini-ai-verify-module` |
+| Your workspace's parsing schema | `MLE_REALNESS_SCORE_MODULE` | `realness-score-module` |
 
 Do not change the capitalization of the module names or the spelling of the import names. The APEX page uses these import names when it loads the modules. The module owner must match the schema in which you created the modules.
 
-Save the environment and refresh the **Imports** tab. Confirm that all three imports are listed without errors. The environment is resolved when the APEX page runs the MLE code; there is no separate JavaScript compilation step for the import mappings.
+Confirm that all three imports are listed without errors. The environment is resolved when the APEX page runs the MLE code; there is no separate JavaScript compilation step for the import mappings.
 
 ## Task 7: Assign the MLE environment to the application
 
 The MLE environment must also be assigned to the APEX application. Creating the environment in the database alone is not enough; the application needs to know which environment resolves imports such as `exifr-module` and `gemini-ai-verify-module`.
 
-1. Return to **App Builder** and open the workshop application.
-2. Open the application definition or application settings.
-3. Select the **Security** tab.
-4. In the **Database Session** section, keep the correct **Parsing Schema** selected.
-5. For **MLE Environment**, select `MLE_EXIF_ENV`.
-6. Save the application settings.
+1. Return to **App Builder** and click on the application name.
+1. Click on **Shared Components** then **Security Attributes**
+1. Select the **Security** tab.
+1. In the **Database Session** section, keep the correct **Parsing Schema** selected.
+1. For **MLE Environment**, select `MLE_EXIF_ENV`.
+1. Save the application settings.
 
 The application is now associated with `MLE_EXIF_ENV`. When an APEX page executes MLE JavaScript, its `import` statements are resolved against this environment and its three module mappings.
 
 ## Verify the configuration
 
-Confirm that the following objects are available in the database:
+Confirm that the following objects are available in the database using the **Object Browser**:
 
 - `MLE_EXIFR_MODULE`
 - `MLE_GEMINI_AI_VERIFY_MODULE`
@@ -257,4 +274,4 @@ The environment is now ready for the APEX application. In the next lab, you will
 
 - **Author** - Sonja Meyer, Consulting Member of Technical Staff 
 - **Contributors** - Martin Bach, Senior Principal Product Manager
-- **Last Updated By/Date** - Sonja Meyer, Consulting Member of Technical Staff, July 2026
+- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, July 2026
