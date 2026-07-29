@@ -6,7 +6,7 @@ In this lab, you will configure an **AI service** used by the application, and c
 
 The application uses an AI service through its Static ID, `google-gemini`. You can of course define your own AI service if you prefer, just make sure it "understands" photos and assign it's own static ID and use it throughout the entire lab. Later modules call this service from JavaScript running in the database.
 
-The JSON Source exposes the metadata stored in the `EXIF_DATA` JSON column of the `SM_POSTS` table so it can be used by APEX components. It gives APEX a structured view of the JSON document and its attributes, making the metadata easier to use in reports and other components.
+The JSON Source exposes the metadata stored in the `EXIF_DATA` JSON column of the `MLE_DATA` table so it can be used by APEX components. It gives APEX a structured view of the JSON document and its attributes, making the metadata easier to use in reports and other components. You will create this column as part of this lab.
 
 This lab requires Oracle AI Database 26ai and Oracle APEX 26.1.
 
@@ -99,7 +99,7 @@ The DDL statement adds the `EXIF_DATA` JSON column without deleting or changing 
 
 ## Task 3: Create the JSON Source
 
-In this task, you will connect an APEX JSON Source to the `EXIF_DATA` column in `SM_POSTS`. The source does not parse the image itself. Instead, it tells APEX where the JSON metadata is stored and which column should be used when APEX components need to read that metadata.
+In this task, you will connect an APEX JSON Source to the `EXIF_DATA` column in `MLE_DATA`. The source does not parse the image itself. Instead, it tells APEX where the JSON metadata is stored and which column should be used when APEX components need to read that metadata.
 
 1. Return to **App Builder** and open the application you imported in Lab 1.
 
@@ -121,19 +121,19 @@ Configure this screen as follows:
 - **Name**: Enter `EXIF_SOURCE`. This is the descriptive name shown in APEX when you select the source later.
 - **JSON Source Type**: Select **Table with JSON Columns**. This option is used because the JSON document is stored in a column of a local database table.
 - **Location**: Keep **Local Database** selected. The metadata is stored in the local Oracle Database, not in a remote REST service.
-- **Owner**: Select the schema that owns the `SM_POSTS` table. In the workshop environment this is `ORACLE`; in another environment, select the schema used by your APEX workspace.
-- **Table with JSON Columns**: Select `SM_POSTS`. This table contains one image record per uploaded image and provides the columns shown on the next screen.
+- **Owner**: Select the schema that owns the `MLE_DATA` table. In the workshop environment this is `ORACLE`; in another environment, select the schema used by your APEX workspace.
+- **Table with JSON Columns**: Select `MLE_DATA`. This table contains one image record per uploaded image and provides the columns shown on the next screen.
 
 When these values are entered, click **Next**.
 
-On the **JSON Columns** screen, APEX lists the columns from `SM_POSTS` that can contain JSON documents. APEX needs this information to identify the metadata document and inspect its attributes. The first field is required. If **JSON Column 1** is left at **- Select -** and you click **Next**, APEX displays the error **JSON Column 1 must have some value**.
+On the **JSON Columns** screen, APEX lists the columns from `MLE_DATA` that can contain JSON documents. APEX needs this information to identify the metadata document and inspect its attributes. The first field is required. If **JSON Column 1** is left at **- Select -** and you click **Next**, APEX displays the error **JSON Column 1 must have some value**.
 
 - For **JSON Column 1**, select `EXIF_DATA`. This column is populated later by the MLE JavaScript module after it extracts the EXIF metadata from the uploaded image.
 - Leave **JSON Schema for Column 1** and **JSON Column 2** with their respective default. The application uses only one JSON column.
 
 Click **Next** to continue.
 
-The table `SM_POSTS` stores one image record per uploaded image. Its `EXIF_DATA` column stores the metadata as a JSON document because EXIF fields can vary between cameras and images. The JSON Source reads that document for APEX components; it does not create a second copy of the metadata.
+The table `MLE_DATA` stores one image record per uploaded image. Its `EXIF_DATA` column stores the metadata as a JSON document because EXIF fields can vary between cameras and images. The JSON Source reads that document for APEX components; it does not create a second copy of the metadata.
 
 The **Data Profile** screen is the final step of the wizard. A data profile is a description of the structure of a JSON document. It lists the attributes that APEX discovered, the data type assigned to each attribute, and the JSON path from which the value is read. For example, an attribute such as `Model` is mapped to the `Model` value inside the `EXIF_DATA` document.
 
@@ -149,7 +149,7 @@ Confirm that the following objects are available:
 
 - A Generative AI service with Static ID `google-gemini`
 - A JSON Source named `EXIF_SOURCE` with Static ID `exif_source`
-- `SM_POSTS.EXIF_DATA` configured as the JSON column
+- `MLE_DATA.EXIF_DATA` configured as the JSON column
 
 You are now ready to continue with [Lab 3: Import third-party JavaScript modules into the database](../lab-3/lab-3.md).
 
