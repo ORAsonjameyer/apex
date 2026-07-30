@@ -25,13 +25,13 @@ In this lab, you will:
 
 This lab assumes that you completed [Lab 1](../lab-1/lab-1.md) and imported the application scaffold, including its supporting objects.
 
-You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export. If you prefer not to use an OCI GenAI service you are free to configure your own, this lab shows you how to configure OpenAI GPT-4o as an alternative. The advantage of the model being its low cost; GPT-4o may even be free of charge for you.
+You also need access to an OCI Generative AI service and permission to use the selected compartment and model. The service sends the image to the selected model for analysis. The OCI credentials are stored in the APEX workspace configuration and are not part of the application export. If you prefer not to use an OCI GenAI service, you are free to configure your own, this lab shows you how to configure OpenAI GPT-4o as an alternative. The model’s advantage is its low cost; GPT-4o may even be free of charge for you.
 
-Regardless which route you decide to take, make sure you understand the potential cost implications of using the AI model of choice.
+Regardless of which route you decide to take, make sure you understand the potential cost implications of using the AI model of choice.
 
 ## Task 1: Create the APEX AI service
 
-1. Open **App Builder**_** by clicking on the stylized APEX icon underneath the Oracle logo in the top-left corner
+1. Open **App Builder** by clicking on the stylized APEX icon underneath the Oracle logo in the top-left corner
 1. From the App Builder home page, open **Workspace Utilities**.
 
 ![Selecting Workspace Utilities in App Builder](./images/workspace-utilities.png)
@@ -42,25 +42,25 @@ Regardless which route you decide to take, make sure you understand the potentia
 
 1. Create an OCI GenAI Service
 
-   Click **Create**_** to begin the definition of the AI Service.
+   Click **Create** to begin the definition of the AI Service.
 
    Configure the service as follows, values you see on the screen but not in the following steps are left at their defaults. These values tell APEX which OCI service, model, and compartment to use.
 
    - **AI Provider**: OCI Generative AI Service
    - **Name**: `google gemini` (use this exact name, including the white space).
    - **Compartment ID**: The OCID of the compartment that contains the Generative AI resources. A compartment is the OCI container in which the service is authorized to access the model.
-   - **Region**: Select the OCI region by clicking on the name _below the textbox_ where the service is available, for example `Germany Central (Frankfurt)`. This click will populate the corresponding **Base URL**, like `eu-frankfurt-1`.
+   - **Region**: Select the OCI region by clicking on the name _below the textbox_ where the service is available in, for example `Germany Central (Frankfurt)`. This click will populate the corresponding **Base URL**, like `eu-frankfurt-1`.
    - **Model ID**: `google.gemini-2.5-flash`. This identifies the Gemini model that will process the image.
 
    In the **Credentials** section, select an existing OCI credential configured for your workspace, or create one if your environment does not provide it. APEX uses this credential to authenticate the request without exposing secret values to the application. If you need to create the OCI API key, open the OCI Console, open your user profile in the top right corner, select **User Settings**, and open the **Tokens and Keys** tab. Click **Add API Key**, download the private key, and record the user OCID, tenancy OCID, fingerprint, and private key; these values are used to create the APEX Web Credential.
 
-   If these are your first Web Credentials, populate the values in the form. If not, create the Web Credential from **Workspace Utilities** > **Web Credentials**, then select it in the Generative AI service configuration. Keep the private key in the credential store and never publish it.
+   If this is your first Web Credential, populate the values in the form. If not, create the Web Credential from **Workspace Utilities** > **Web Credentials**, then select it in the Generative AI service configuration. Keep the private key in the credential store and never publish it.
 
    - **Static ID**: `google-gemini` will be automatically filled.  The Static ID is different from the display name: it is the stable, code-friendly identifier used by the application and by the MLE module. It must remain exactly as set, `google-gemini`.
 
    ![Definition of the Google Gemini AI Service](./images/ai-service.png)
 
-   Click **Test Connection** to verify the configuration, then click **Create** or **Apply Changes**. See [below](#troubleshooting) for troubleshooting steps should you encounter errors.
+   Click **Test Connection** to verify the configuration, then click **Create** or **Apply Changes**. See [Troubleshooting](#troubleshooting) below should you encounter errors.
 
 1. Create an OpenAI ChatGPT-4o Service
 
@@ -79,7 +79,7 @@ The AI service is now available to the application through APEX AI Services. The
 
 ## Task 2: Add a JSON column to MLE_DATA
 
-The EXIF information this app will extract from a photo is provided in JSON format. The best way to persist the meta information along with the photo is to store it in a JSON column. `MLE_DATA` currently doesn't feature a JSON column, let's add it in the next step.
+The EXIF information this app will extract from a photo is provided in JSON format. The best way to persist the meta information along with the photo is to store it in a JSON column. `MLE_DATA` currently doesn't feature a JSON column. You add it in the following step.
 
 1. Open **SQL Workshop** and select **SQL Commands**.
 1. Run the following statement:
@@ -105,43 +105,42 @@ In this task, you will connect an APEX JSON Source to the `EXIF_DATA` column in 
 
    The application must be open before you select a JSON Source because JSON Sources are application-level shared components.
 
-2. Open **Shared Components**.
-3. Under **Data Sources**, select **JSON Sources**.
+1. Open **Shared Components**.
+1. Under **Data Sources**, select **JSON Sources**.
 
    ![JSON Sources in shared components](./images/JSON-source.png)
 
    The JSON Sources page lists the JSON sources already defined for this application. In the current scaffold, no source is defined yet, so the page displays an empty list.
 
-4. Click **Create**.
+1. Click **Create**.
 
 The **Create JSON Source** dialog is the first screen of the creation wizard. A JSON Source is an APEX data source that reads JSON documents from a database table or another supported location. It tells APEX where the JSON is stored and allows APEX to use the attributes inside the document without copying the data into separate columns.
 
-Configure this screen as follows:
+The table `MLE_DATA` stores one image record per uploaded image. Its `EXIF_DATA` column stores the metadata as a JSON document because EXIF fields can vary between cameras and images. The JSON Source reads that document for APEX components; it does not create a second copy of the metadata.
+
+Configure the first page of the wizard as follows:
 
 - **Name**: Enter `EXIF_SOURCE`. This is the descriptive name shown in APEX when you select the source later.
 - **JSON Source Type**: Select **Table with JSON Columns**. This option is used because the JSON document is stored in a column of a local database table.
 - **Location**: Keep **Local Database** selected. The metadata is stored in the local Oracle Database, not in a remote REST service.
-- **Owner**: Select the schema that owns the `MLE_DATA` table. In the workshop environment this is `ORACLE`; in another environment, select the schema used by your APEX workspace.
+- **Owner**: Select the schema that owns the `MLE_DATA` table. Select the schema used by your APEX workspace.
 - **Table with JSON Columns**: Select `MLE_DATA`. This table contains one image record per uploaded image and provides the columns shown on the next screen.
 
 When these values are entered, click **Next**.
 
-On the **JSON Columns** screen, APEX lists the columns from `MLE_DATA` that can contain JSON documents. APEX needs this information to identify the metadata document and inspect its attributes. The first field is required. If **JSON Column 1** is left at **- Select -** and you click **Next**, APEX displays the error **JSON Column 1 must have some value**.
+On the **JSON Columns** screen, APEX lists columns from `MLE_DATA` that can contain JSON documents. APEX needs this information to identify the metadata document and inspect its attributes.
 
 - For **JSON Column 1**, select `EXIF_DATA`. This column is populated later by the MLE JavaScript module after it extracts the EXIF metadata from the uploaded image.
-- Leave **JSON Schema for Column 1** and **JSON Column 2** with their respective default. The application uses only one JSON column.
+- Since the table is currently empty, APEX cannot derive a Data Profile without some extra help in the form of a _JSON Schema_.
+   - A JSON schema defines exactly what can be stored in a JSON column.
+   - Click **Choose File** for JSON Schema for column 1 and load [json-schema.json](../solution/json-schema.json).
+- Leave everything concerning **JSON Column 2** with their respective defaults, the application uses only one JSON column.
 
-Click **Next** to continue.
+![JSON Source settings](./images/JSON-source-with-schema.png)
 
-The table `MLE_DATA` stores one image record per uploaded image. Its `EXIF_DATA` column stores the metadata as a JSON document because EXIF fields can vary between cameras and images. The JSON Source reads that document for APEX components; it does not create a second copy of the metadata.
+The Data Profile should now be completely populated with 35 columns. APEX generates the Static ID automatically. Click **Create** to save the JSON Source and its data profile.
 
-The **Data Profile** screen is the final step of the wizard. A data profile is a description of the structure of a JSON document. It lists the attributes that APEX discovered, the data type assigned to each attribute, and the JSON path from which the value is read. For example, an attribute such as `Model` is mapped to the `Model` value inside the `EXIF_DATA` document.
-
-Review the detected attributes and accept the defaults for this lab. The profile should show `EXIF_DATA` as the source for the EXIF attributes. No manual changes or schema file are required.
-
-APEX generates the Static ID automatically. Click **Create** to save the JSON Source and its data profile.
-
-APEX creates the JSON Source and its data profile for the EXIF document. The data profile describes the attributes found in the JSON, such as camera information, timestamps, and location data. APEX can now use these attributes in reports and other application components.
+The data profile describes the attributes found in the JSON, such as camera information, timestamps, and location data. APEX can now use these attributes in reports and other application components.
 
 ## Verify the configuration
 
@@ -155,7 +154,7 @@ You are now ready to continue with [Lab 3: Import third-party JavaScript modules
 
 ## Troubleshooting
 
-Based on your configuration you may have to enable outbound network traffic. Autonomous AI Database shouldn't require this step, others such as self-hosted instances do. Should you get errors similar in wording to "request denied due to Network ACL", this snippet should solve problem. It must be executed by an administrator.
+Depending on your configuration you may have to enable outbound network traffic. Autonomous AI Database shouldn't require this step. Others, such as self-hosted instances do. Should you get errors similar in wording to "request denied due to Network ACL", this snippet should solve the problem. It must be executed by an administrator.
 
 ```sql
 <copy>
