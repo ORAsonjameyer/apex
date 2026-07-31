@@ -7,106 +7,73 @@
   "additionalProperties": false,
   "properties": {
     "ColorSpace": {
-      "type": "integer",
-      "minimum": 0
+      "type": "string"
     },
     "GPSDateStamp": {
-      "type": "string",
-      "pattern": "^\\d{4}:\\d{2}:\\d{2}$",
-      "examples": [
-        "2025:09:05"
-      ]
+      "type": "string"
     },
     "ISO": {
-      "type": "integer",
-      "minimum": 0
+      "type": "string"
     },
     "OffsetTimeDigitized": {
-      "type": "string",
-      "pattern": "^[+-](?:0\\d|1\\d|2[0-3]):[0-5]\\d$",
-      "examples": [
-        "+02:00"
-      ]
+      "type": "string"
     },
     "LensModel": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "latitude": {
-      "type": "number",
-      "minimum": -90,
-      "maximum": 90
+      "type": "string"
     },
     "longitude": {
-      "type": "number",
-      "minimum": -180,
-      "maximum": 180
+      "type": "string"
     },
     "LensMake": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "ExposureProgram": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "GPSAltitude": {
-      "type": "number"
+      "type": "string"
     },
     "SceneType": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "ModifyDate": {
-      "type": "string",
-      "format": "date-time"
+      "type": "string"
     },
     "CreateDate": {
-      "type": "string",
-      "format": "date-time"
+      "type": "string"
     },
     "ExifVersion": {
-      "type": "string",
-      "pattern": "^\\d+(?:\\.\\d+)*$",
-      "examples": [
-        "2.3.2"
-      ]
+      "type": "string"
     },
     "ExposureMode": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "Software": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "Orientation": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "ExifImageHeight": {
-      "type": "integer",
-      "minimum": 1
+      "type": "integer"
     },
     "Make": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "ExifImageWidth": {
-      "type": "integer",
-      "minimum": 1
+      "type": "string"
     },
     "HostComputer": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "Model": {
-      "type": "string",
-      "minLength": 1
+      "type": "string"
     },
     "DateTimeOriginal": {
-      "type": "string",
-      "format": "date-time"
+      "type": "string"
     }
   },
   "required": [
