@@ -259,7 +259,9 @@ Start by creating a Dynamic Action named `ai_assessment` **on Page Load** by rig
 
     Return the values to the page items listed above. The Gemini module performs the image analysis; the realness-score module formats the result for the APEX page.
 
-Save Page 2 before continuing.
+Save Page 2 before continuing. It should look like this:
+
+![Page 2 completed in Page Designer](./images/page-2-completed.png)
 
 ## Verify the application
 
