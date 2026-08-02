@@ -4,13 +4,13 @@
 
 Before you begin building the application, you'll import a prebuilt application scaffold. The scaffold provides the application structure, supporting database objects, and configuration required for the remaining labs, allowing you to focus on implementing new functionality rather than creating the project from scratch.
 
-In this lab, you will download the scaffold and import it into the workspace you created in the earlier step. 
+In this lab, you will download the scaffold and import it into the workspace you created in the earlier step.
 
 This lab requires Oracle AI Database 26ai and Oracle APEX 26.1. Earlier versions are not supported because the application uses features introduced in these releases.
 
 The application scaffold contains:
 
-- The APEX application itself
+- The core of the APEX application itself
 - Supporting objects required for the application to work
 
 You can use any browser compatible with APEX to complete this lab.
@@ -71,4 +71,4 @@ After the import completes, the application appears in App Builder and is ready 
 
 - **Author** - Martin Bach, Senior Principal Product Manager
 - **Contributors** - Sonja Meyer, Consulting Member of Technical Staff
-- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, July 2026
+- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, August 2026

@@ -6,10 +6,10 @@ In this lab, you will complete the application by connecting the pages to `MLE_D
 
 The final application will differ from the scaffold in three important ways:
 
-- All APEX pages use the scaffold's updated and enhanced `MLE_DATA` table.
-- Processing is in largest parts performed in MLE/JavaScript
+- All APEX pages use the scaffold's updated and enhanced `MLE_DATA` table featuring the JSON column
+- Processing is in largest parts performed in MLE/JavaScript on the server
 - Page 2 displays
-    - EXIF data based on a JSON Source
+    - EXIF data based on a SQL query featuring a JSON_TABLE() expression
     - Google Gemini analysis (or your own model's conclusion)
     - A calculated _realness_ score
 
@@ -35,7 +35,7 @@ In this lab, you will:
 
 The scaffold uses `MLE_DATA` as its source table. Keep this table name in all Page 1 components.
 
-Open Page 1: _Photo Metadata_ in Page Designer and make the following changes.
+Open Page 1: _Photo Metadata_ in Page Designer and ensure the major properties align with these settings:
 
 1. **Form region**
 
@@ -94,8 +94,66 @@ Open Page 1: _Photo Metadata_ in Page Designer and make the following changes.
 
         ```javascript
         <copy>
-        const { extractAndSaveEXIF } = await import ('exifr-helper');
-        extractAndSaveEXIF(apex.env.P1_ID);
+        // Load the EXIF library from the MLE environment.
+        const { default: exifr } = await import('exifr-module');
+
+        // get the post ID from the APEX page
+        const postId = apex.env.P1_ID;
+
+        // Fetch the uploaded image as a byte stream, so exifr can read it.
+        const photo = apex.conn.execute(
+            `
+            select file_blob
+            from mle_data
+            where id = :id
+            `,
+            {
+                id: { val: postId }
+            },
+            {
+                fetchInfo: {
+                    FILE_BLOB: {
+                        type: oracledb.UINT8ARRAY
+                    }
+                }
+            });
+
+        if (photo.rows.length !== 1) {
+            throw new Error('no photo found on this page');
+        }
+
+        // Parse EXIF metadata with the JavaScript library.
+        const exifData = await exifr.parse(photo.rows[0].FILE_BLOB.buffer);
+
+        if (!exifData) {
+            return;
+        }
+
+        // Store the EXIF JSON and GPS coordinates back in the database.
+        const updateResult = apex.conn.execute(
+            `
+            update mle_data
+            set exif_data = :data,
+                lon = :lon,
+                lat = :lat
+            where id = :id
+            `,
+            {
+                data: {
+                    type: oracledb.DB_TYPE_JSON,
+                    val: exifData
+                },
+                lon: {
+                    type: oracledb.NUMBER,
+                    val: exifData.longitude === undefined ? null : exifData.longitude
+                },
+                lat: {
+                    type: oracledb.NUMBER,
+                    val: exifData.latitude === undefined ? null : exifData.latitude
+                },
+                id: { val: postId }
+            }
+        );
         </copy>
         ```
 
@@ -104,7 +162,7 @@ Open Page 1: _Photo Metadata_ in Page Designer and make the following changes.
 
 Save Page 1 before continuing.
 
-## Task 2: Update Page 2 and add the EXIF data region
+## Task 2: Update Page 2 by adding the EXIF data display and AI Assessment
 
 You are going to complete the design and code for the second APEX page in this task. Start by opening Page 2: _Photo Metadata Details_ in Page Designer.
 
@@ -128,7 +186,9 @@ You are going to complete the design and code for the second APEX page in this t
 
 1. **Realness Score**
 
-    This region displays the "realness score". It is _not_ a forensic number, but rather an approximation whether the AI service (Google Gemini by default) considers the photo AI generated, or not. Define the region as follows:
+    This region displays the "realness score". It is _not_ a forensic number, but rather an approximation whether the AI service (Google Gemini by default) considers the photo AI generated, or not. The realness score is calculated by sending the photo, along with a system and a regular prompt to the AI service. The latter returns an assessment in JSON format, which is parsed and displayed in this page. You created the code performing the calls to the AI model in the previous lab.
+
+    Define the region as follows:
 
     - **Identification**
         - Name: Realness Score
@@ -181,11 +241,53 @@ You are going to complete the design and code for the second APEX page in this t
         - Name: `EXIF_DATA`
         - Title: EXIF Data
     - **Source**
-        - Location: JSON Source
-        - JSON Source: `EXIF_SOURCE`
-    - **Local Post Processing**:
-        - Type: where/order by clause
-        - Where clause: `id = :P2_ID`
+        - Location: Local Database
+        - Type: SQL Query
+        - SQL query:
+
+        ```sql
+        <copy>
+        select
+            id,
+            make,
+            model,
+            lens_make,
+            lens_model,
+            focal_length,
+            case
+                when exposure_time is null then null
+                when exposure_time >= 1 then to_char(round(exposure_time, 2)) || ' s'
+                else '1/' || to_char(round(1 / exposure_time)) || ' s'
+            end as exposure_time,
+            case
+                when aperture is not null then 'f/' || to_char(round(aperture, 1))
+            end as aperture,
+            iso,
+            flash,
+            latitude,
+            longitude
+        from
+            mle_data,
+            json_table(
+                mle_data.exif_data, '$'
+                columns (
+                    make          varchar2(150) path '$.Make',
+                    model         varchar2(150) path '$.Model',
+                    lens_make     varchar2(150) path '$.LensMake',
+                    lens_model    varchar2(150) path '$.LensModel',
+                    focal_length  varchar2(150) path '$.FocalLength',
+                    exposure_time number        path '$.ExposureTime',
+                    aperture      number        path '$.FNumber',
+                    iso           number        path '$.ISO',
+                    flash         varchar2(150) path '$.Flash',
+                    latitude      number        path '$.latitude',
+                    longitude     number        path '$.longitude'
+                )
+            ) jt
+        where
+            id = :P2_ID
+        </copy>
+        ```
 
     Set the region's attributes as follows:
 
@@ -195,7 +297,7 @@ You are going to complete the design and code for the second APEX page in this t
     - **Messages**:
         - when no data found: Photo does not contain EXIF data.
 
-The JSON Source reads `MLE_DATA.EXIF_DATA`. No additional SQL query is required for this region.
+The SQL query extracts only a subset of EXIF fields extracted by the application.
 
 ## Task 3: Add Dynamic Actions to Page 2
 
@@ -269,7 +371,7 @@ Upload an image and confirm that:
 
 - Page 1 stores the image in `MLE_DATA`.
 - The EXIF MLE module writes metadata to `MLE_DATA.EXIF_DATA`.
-- Page 2 displays the image, EXIF data, map, Gemini analysis, and realness score.
+- Page 2 displays the image, EXIF data, map, Gemini analysis, and realness score. It also displays the location where the photo was taken on a map.
 
 ## Learn More
 
