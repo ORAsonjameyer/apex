@@ -383,4 +383,4 @@ Upload an image and confirm that:
 
 - **Author** - Martin Bach, Senior Principal Product Manager
 - **Contributors** - Sonja Meyer, Consulting Member of Technical Staff
-- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, July 2026
+- **Last Updated By/Date** - Martin Bach, Senior Principal Product Manager, August 2026
